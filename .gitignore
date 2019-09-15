@@ -1,0 +1,10 @@
+*.tfvars
+*.tfstate
+*tfstate*
+*~
+.terraform
+
+# Aiven kafka certs
+ca.pem
+service.cert
+service.key
