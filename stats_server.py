@@ -82,6 +82,7 @@ def stats_gathering_loop():
         # We would make a data validity/correctness check here before storing to the db
 
         with pg_conn.cursor() as cursor:
+            # Consider inserting batches of data vs one insert/message
             sql = """INSERT INTO stats_events VALUES (DEFAULT, %s, DEFAULT)"""
             cursor.execute(sql, (json.dumps(message.value),))
 
