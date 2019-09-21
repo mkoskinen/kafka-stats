@@ -2,14 +2,14 @@
 resource "aiven_service" "statskafka" {
   project                 = aiven_project.statsproject.project
   cloud_name              = var.aiven_region
-  plan                    = "business-4"
+  plan                    = "startup-2"
   service_name            = "${var.environment}-statskafka"
   service_type            = "kafka"
   maintenance_window_dow  = "monday"
   maintenance_window_time = "10:00:00"
   kafka_user_config {
-    kafka_connect = true
-    kafka_rest    = true
+    kafka_connect = false
+    kafka_rest    = false
     kafka_version = "2.3"
     kafka {
       group_max_session_timeout_ms = 70000
