@@ -77,7 +77,7 @@ def stats_loop(host_id):
 
         # Send the data to kafka
         logging.info("Sending metrics data to kafka: %s", stats)
-        producer.send("stats_topic", stats)
+        producer.send("stats_topic", key=host_id, value=stats)
         producer.flush()
 
         # We're all done, sleep before a new iteration
