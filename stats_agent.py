@@ -18,10 +18,10 @@ import sys
 import socket
 import time
 
-import kafka.errors
 import psutil
-from kafka import KafkaProducer
+import kafka.errors
 from kafka.errors import KafkaError
+from kafka import KafkaProducer
 
 
 __author__ = "Markus Koskinen"
@@ -57,6 +57,7 @@ def get_stats():
         'swap_usage_percent': swap_usage_percent,
         'utc_time': str(datetime.datetime.utcnow())
         }
+
 
 def init_kafka_producer():
     """ Return a kafka producer. Wait for a connection to be available. """
