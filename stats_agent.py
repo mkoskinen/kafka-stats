@@ -18,8 +18,10 @@ import sys
 import socket
 import time
 
+import kafka.errors
 import psutil
 from kafka import KafkaProducer
+from kafka.errors import KafkaError
 
 
 __author__ = "Markus Koskinen"
@@ -30,6 +32,7 @@ _DEBUG = False
 _INTERVAL_SECONDS = 10
 _REQUIRED_ENV_VARS = ['KAFKA_SERVER']
 _METRICS_VERSION = 1
+_CONNECT_RETRY_SECONDS = 15
 
 if _DEBUG:
     logging.basicConfig(level=logging.DEBUG, format=_LOG_FORMAT)
@@ -55,18 +58,31 @@ def get_stats():
         'utc_time': str(datetime.datetime.utcnow())
         }
 
+def init_kafka_producer():
+    """ Return a kafka producer. Wait for a connection to be available. """
+    producer = None
+
+    while producer is None:
+        try:
+            producer = KafkaProducer(
+                bootstrap_servers=os.environ['KAFKA_SERVER'],
+                value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+                security_protocol="SSL",
+                ssl_cafile="ca.pem",
+                ssl_certfile="service.cert",
+                ssl_keyfile="service.key",
+            )
+        except kafka.errors.NoBrokersAvailable as kafka_error:
+            logging.error("No brokers available, retrying in %d seconds. Kafka error: %s", _CONNECT_RETRY_SECONDS, kafka_error)
+            time.sleep(_CONNECT_RETRY_SECONDS)
+
+    return producer
+
 
 def stats_loop(host_id):
     """ This loop calls functions gathering system metrics and sends them to kafka every _INTERVAL_SECONDS. """
     logging.info("Initializing kafka producer.")
-    producer = KafkaProducer(
-        bootstrap_servers=os.environ['KAFKA_SERVER'],
-        value_serializer=lambda v: json.dumps(v).encode('utf-8'),
-        security_protocol="SSL",
-        ssl_cafile="ca.pem",
-        ssl_certfile="service.cert",
-        ssl_keyfile="service.key",
-    )
+    producer = init_kafka_producer()
 
     while True:
         # Gather the stats and add some metadata values to the dict
@@ -77,8 +93,13 @@ def stats_loop(host_id):
 
         # Send the data to kafka
         logging.info("Sending metrics data to kafka: %s", stats)
-        producer.send("stats_topic", key=host_id, value=stats)
-        producer.flush()
+        future = producer.send("stats_topic", key=bytearray(host_id, 'utf-8'), value=stats)
+
+        try:
+            record_metadata = future.get(timeout=10)
+            logging.debug(record_metadata)
+        except KafkaError as kafka_error:
+            logging.error("Failed to send data to kafka: %s", kafka_error)
 
         # We're all done, sleep before a new iteration
         logging.debug("Sleeping for %d seconds", _INTERVAL_SECONDS)
