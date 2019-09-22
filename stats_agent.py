@@ -20,7 +20,6 @@ import time
 
 import psutil
 import kafka.errors
-from kafka.errors import KafkaError
 from kafka import KafkaProducer
 
 
@@ -61,6 +60,7 @@ def get_stats():
 
 def init_kafka_producer():
     """ Return a kafka producer. Wait for a connection to be available. """
+    logging.info("Initializing kafka producer ...")
     producer = None
 
     while producer is None:
@@ -82,7 +82,6 @@ def init_kafka_producer():
 
 def stats_loop(host_id):
     """ This loop calls functions gathering system metrics and sends them to kafka every _INTERVAL_SECONDS. """
-    logging.info("Initializing kafka producer.")
     producer = init_kafka_producer()
 
     while True:
