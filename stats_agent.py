@@ -93,7 +93,7 @@ def stats_loop(host_id):
 
         # Send the data to kafka
         logging.info("Sending metrics data to kafka: %s", stats)
-        future = producer.send("stats_topic", key=bytearray(host_id, 'utf-8'), value=stats)
+        future = producer.send("stats_topic", key=bytearray('"' + host_id + '"', 'utf-8'), value=stats)
 
         try:
             record_metadata = future.get(timeout=10)
